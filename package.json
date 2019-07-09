@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/computerjazz/react-native-draggable-flatlist.git"
+    "url": "git+https://github.com/nixplay/react-native-draggable-flatlist.git"
   },
   "keywords": [
     "react-native",
@@ -23,7 +23,7 @@
   "author": "Daniel Merrill",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/computerjazz/react-native-draggable-flatlist/issues"
+    "url": "https://github.com/nixplay/react-native-draggable-flatlist/issues"
   },
-  "homepage": "https://github.com/computerjazz/react-native-draggable-flatlist#readme"
+  "homepage": "https://github.com/nixplay/react-native-draggable-flatlist#readme"
 }
