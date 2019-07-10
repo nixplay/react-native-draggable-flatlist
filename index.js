@@ -390,19 +390,22 @@ class SortableFlatList extends Component {
   }
 
   renderItem = ({ item, index }) => {
-    const { renderItem, data, horizontal, numColumns } = this.props
-    const { activeRow, spacerIndex } = this.state
-    const isActiveRow = activeRow === index
-    const isSpacerRow = spacerIndex === index
-    const isLastItem = index === data.length - 1
-    const spacerAfterLastItem = spacerIndex >= data.length
-    const activeRowSize = this._measurements[activeRow] ? this._measurements[activeRow][horizontal ? 'width' : 'height'] : 0
-    const endPadding = (isLastItem && spacerAfterLastItem)
-    const spacerStyle = { [horizontal ? 'width' : 'height']: activeRowSize }
+    const {
+      renderItem, data, horizontal, numColumns, placeholderColor,
+    } = this.props;
+    const { activeRow, spacerIndex } = this.state;
+    const isActiveRow = activeRow === index;
+    const isSpacerRow = spacerIndex === index && !isActiveRow;
+
+    const isLastItem = index === data.length - 1;
+    const spacerAfterLastItem = spacerIndex >= data.length;
+    const spacerAfter = (isLastItem && spacerAfterLastItem);
+
+    const isDragging = spacerIndex >= 0;
+    const showVerticalLine = horizontal || (!horizontal && numColumns > 1);
 
     return (
-      <View style={[styles.fullOpacity, { flexDirection: horizontal ? 'row' : 'column', flex: 1 / numColumns }]} >
-        {isSpacerRow && <View style={spacerStyle} />}
+      <View style={[styles.fullOpacity, { flex: 1 / numColumns, position: 'relative' }]}>
         <RowItem
           horizontal={horizontal}
           index={index}
@@ -413,10 +416,25 @@ class SortableFlatList extends Component {
           moveStart={this.moveStart}
           moveEnd={this.moveEnd}
           extraData={this.state.extraData}
+          style={isDragging && { transform: [{ scale: 0.8 }] }}
         />
-        {endPadding && <View style={spacerStyle} />}
+        {isSpacerRow
+        && (
+          <View style={[{
+            position: 'absolute',
+            backgroundColor: '#000',
+            zIndex: 2,
+            width: 2,
+            height: '100%',
+          },
+          showVerticalLine ? { width: 2, height: '90%' } : { height: 2, width: '90%' },
+          showVerticalLine && (spacerAfter ? { top: '5%', right: '1%' } : { top: '5%', left: '1%' }),
+          !showVerticalLine && (spacerAfter ? { bottom: '1%', left: '5%' } : { top: '1%', left: '5%' }),
+          ]}
+          />
+        )}
       </View>
-    )
+    );
   }
 
   renderHoverComponent = () => {
