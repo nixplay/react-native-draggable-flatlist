@@ -107,6 +107,8 @@ class SortableFlatList extends Component {
     contentContainerStyle: PropTypes.any,
     extraData: PropTypes.any,
     keyExtractor: PropTypes.func,
+    dragEnabled: PropTypes.bool,
+    shrinkOnDragOnly: PropTypes.bool,
   }
 
   static defaultProps = {
@@ -120,6 +122,8 @@ class SortableFlatList extends Component {
     contentContainerStyle: {},
     extraData: null,
     keyExtractor: () => {},
+    dragEnabled: false,
+    shrinkOnDragOnly: false,
   };
 
   constructor(props) {
@@ -158,7 +162,7 @@ class SortableFlatList extends Component {
       onPanResponderRelease: () => {
         // console.log('onPanResponderRelease');
         const { activeIndex, spacerIndex } = this.state;
-        const { data, horizontal } = this.props;
+        const { data, horizontal, shrinkOnDragOnly } = this.props;
         const activeMeasurements = this._measurements[activeIndex];
         const spacerMeasurements = this._measurements[spacerIndex];
         const lastElementMeasurements = this._measurements[data.length - 1];
@@ -199,12 +203,7 @@ class SortableFlatList extends Component {
             useNativeDriver: true,
             duration: 300,
           }),
-          Animated.timing(this._transformAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-            delay: 200,
-            duration: 100,
-          }),
+          shrinkOnDragOnly ? this.animateExpandItem() : null,
         ]);
 
         this._releaseAnim.start(this.onReleaseAnimationEnd);
@@ -214,9 +213,21 @@ class SortableFlatList extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const { extraData } = this.props;
+    const { extraData, dragEnabled } = this.props;
     if (extraData !== nextProps.extraData) {
       this.setState({ extraData });
+    }
+
+    if (dragEnabled !== nextProps.dragEnabled
+      && nextProps.dragEnabled === true
+      && nextProps.shrinkOnDragOnly === false) {
+      this.animateShrinkItem().start();
+    } else if (
+      dragEnabled !== nextProps.dragEnabled
+      && nextProps.dragEnabled === false
+      && nextProps.shrinkOnDragOnly === false
+    ) {
+      this.animateExpandItem().start();
     }
   }
 
@@ -236,7 +247,7 @@ class SortableFlatList extends Component {
     this._releaseAnim = null;
     this.setState(initialState, () => {
       if (onMoveEnd) onMoveEnd({
-        row: data[activeIndex],
+        item: data[activeIndex],
         from,
         to,
         data: sortedData,
@@ -292,6 +303,23 @@ class SortableFlatList extends Component {
 
     requestAnimationFrame(this.animate);
   }
+
+  animateShrinkItem = () => (
+    Animated.timing(this._transformAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      duration: 300,
+    })
+  )
+
+  animateExpandItem = () => (
+    Animated.timing(this._transformAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      delay: 200,
+      duration: 100,
+    })
+  )
 
   scroll = (scrollAmt, spacerIndex) => {
     const { data } = this.props;
@@ -360,7 +388,7 @@ class SortableFlatList extends Component {
   moveStart = (evt, hoverComponent, index) => {
     // console.log('here move', index);
     const { pageX, pageY } = evt.nativeEvent;
-    const { horizontal, onMoveStart } = this.props;
+    const { horizontal, onMoveStart, shrinkOnDragOnly } = this.props;
     if (this._releaseAnim) {
       this._releaseAnim.stop();
       this.onReleaseAnimationEnd();
@@ -413,11 +441,9 @@ class SortableFlatList extends Component {
     this._offset.x.setValue(this._offset._x);
     this._offset.y.setValue(this._offset._y);
 
-    Animated.timing(this._transformAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      duration: 300,
-    }).start();
+    if (shrinkOnDragOnly) {
+      this.animateShrinkItem().start();
+    }
 
     this.setState({
       activeIndex: index,
@@ -567,6 +593,9 @@ class SortableFlatList extends Component {
     return (
       <View
         ref={this.measureContainer}
+        // ref.measure will not return anything if no onLayout
+        // https://github.com/facebook/react-native/issues/3282
+        onLayout={() => {}}
         {...this._panResponder.panHandlers}
         style={styles.wrapper} // Setting { opacity: 1 } fixes Android measurement bug: https://github.com/facebook/react-native/issues/18034#issuecomment-368417691
       >
