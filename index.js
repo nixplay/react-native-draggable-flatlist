@@ -72,6 +72,8 @@ class SortableFlatList extends Component {
 
   _spacerIndex = -1
 
+  _baseMeasurement = null;
+
   _measurements = []
 
   _scrollOffset = 0
@@ -362,7 +364,7 @@ class SortableFlatList extends Component {
 
   measureItem = (index) => {
     const { activeIndex } = this.state;
-    const { horizontal } = this.props;
+    const { horizontal, numColumns } = this.props;
     // setTimeout required or else dimensions reported as 0
     if (this._refs[index]) setTimeout(() => {
       try {
@@ -376,6 +378,18 @@ class SortableFlatList extends Component {
               x: horizontal ? xpos : x,
               width,
               height,
+            };
+            if (index === 0) { this._baseMeasurement = this._measurements[index]; }
+          } else if (this._baseMeasurement) {
+            // assume all items are in the same size
+            const item = this._baseMeasurement;
+            const column = (index % numColumns);
+            const row = Math.floor(index / numColumns);
+            this._measurements[index] = {
+              y: item.y + (row * item.height),
+              x: item.x + (column * item.width),
+              width: item.width,
+              height: item.height,
             };
           }
         }));
@@ -394,7 +408,7 @@ class SortableFlatList extends Component {
       this.onReleaseAnimationEnd();
       return;
     }
-    this._refs.forEach((ref, i) => this.measureItem(ref, i));
+    this._refs.forEach((ref, i) => this.measureItem(i));
     this._spacerIndex = index;
 
     const tappedPixel = horizontal ? pageX : pageY;
